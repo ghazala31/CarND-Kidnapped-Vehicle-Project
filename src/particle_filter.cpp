@@ -25,7 +25,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles = 300;
+	num_particles = 500;
 	default_random_engine gen;
 
 	normal_distribution<double> dist_x(x, std[0]);
@@ -60,7 +60,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	for (int i = 0; i < num_particles; i++) {
 		Particle p = particles[i];
 
-		if (fabs(yaw_rate) > 0.001) {
+		if (fabs(yaw_rate) > 0.0001) {
 			p.x += (velocity/yaw_rate)*(sin(p.theta + yaw_rate*delta_t) - sin(p.theta)) + dist_x(gen);
 			p.y += (velocity/yaw_rate)*(cos(p.theta) - cos(p.theta + yaw_rate*delta_t)) + dist_y(gen);
 		}
@@ -96,21 +96,25 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
 
-	//cout<<">>Observation:"<<endl;
 	for (int i = 0; i < num_particles; i++) {
 		Particle p = particles[i];
 		double weight = 1;
+		Map in_range_landmarks;
+		in_range_landmarks.landmark_list.clear();
+		for(int j = 0; j < map_landmarks.landmark_list.size(); j++) {
+			if (dist(p.x,p.y,map_landmarks.landmark_list[j].x_f, map_landmarks.landmark_list[j].y_f) <= sensor_range) {
+				in_range_landmarks.landmark_list.push_back(map_landmarks.landmark_list[j]);
+			}
+		}
 		for(int j  = 0; j < observations.size(); j++) {
 			LandmarkObs o = observations[j];
 			o.x = p.x + o.x*cos(p.theta) - o.y*sin(p.theta);
 			o.y = p.y + o.x*sin(p.theta) + o.y*cos(p.theta);
 			double min_distance = 1000;
 			int final_id = -1;
-			for (int k = 0; k < map_landmarks.landmark_list.size(); k++) {
-				Map::single_landmark_s l = map_landmarks.landmark_list[k];
+			for (int k = 0; k < in_range_landmarks.landmark_list.size(); k++) {
+				Map::single_landmark_s l = in_range_landmarks.landmark_list[k];
 				double distance = dist(o.x,o.y,l.x_f,l.y_f);
-				if (distance > sensor_range)
-					continue;
 				if (distance < min_distance) {
 					min_distance = distance;
 					final_id = l.id_i-1;
@@ -120,8 +124,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				Map::single_landmark_s l = map_landmarks.landmark_list[final_id];
 				double prob = getProbability(o.x,o.y,l.x_f,l.y_f,std_landmark);
 				weight *=prob;
+				//cout<<"Obs: "<<j<<" with Lm: "<<final_id+1<<endl;
 			}
 		}
+		//weight = weight == 1? 0 : weight;
 		p.weight = weight;
 		particles[i] = p;
 	}

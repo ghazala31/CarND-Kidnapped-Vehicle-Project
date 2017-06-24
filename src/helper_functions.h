@@ -54,9 +54,9 @@ inline double dist(double x1, double y1, double x2, double y2) {
 }
 
 inline double getProbability(double x1,double y1,double x2,double y2,double std[]) {
-	double x_part = (x1-x2)*(x1-x2)/(2*std[0]*std[0]);
-	double y_part = (y1-y2)*(y1-y2)/(2*std[1]*std[1]);
-	return exp(-x_part-y_part)/(2*M_PI*std[0]*std[1]);
+	double x_part = (x1-x2)*(x1-x2)/(2.0*std[0]*std[0]);
+	double y_part = (y1-y2)*(y1-y2)/(2.0*std[1]*std[1]);
+	return exp(-x_part-y_part)/(2.0*M_PI*std[0]*std[1]);
 }
 
 inline double * getError(double gt_x, double gt_y, double gt_theta, double pf_x, double pf_y, double pf_theta) {
